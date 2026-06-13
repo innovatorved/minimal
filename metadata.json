@@ -1,6 +1,6 @@
 {
   "name": "Focus Launcher",
-  "description": "A minimalist, distraction-free productivity launcher designed to reduce screen time. Features text-based layouts, focus sessions, app blocking, and elegant dynamic usage statistics.",
+  "description": "Minimal — a distraction-free text-only Android launcher with offline usage insights, focus sessions, and app blocking.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

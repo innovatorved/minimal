@@ -34,3 +34,28 @@ data class FocusSessionEntity(
     val durationMinutes: Int,
     val isCompleted: Boolean
 )
+
+@Entity(tableName = "daily_rollup")
+data class DailyRollupEntity(
+    @PrimaryKey val date: String,
+    val totalScreenMinutes: Int = 0,
+    val totalOpens: Int = 0,
+    val topAppPackage: String? = null,
+    val topAppName: String? = null,
+    val topAppMinutes: Int = 0,
+    val blockedAttempts: Int = 0,
+    val focusSessionsCompleted: Int = 0,
+    val mutedNotificationCount: Int = 0,
+    val peakHour: Int? = null,
+    val firstActivityHour: Int? = null,
+    val lastActivityHour: Int? = null,
+    val underDailyGoal: Boolean = false
+)
+
+@Entity(tableName = "launcher_events")
+data class LauncherEventEntity(
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val type: String,
+    val timestamp: Long = System.currentTimeMillis(),
+    val metadata: String? = null
+)

@@ -9,9 +9,12 @@ import androidx.room.RoomDatabase
     entities = [
         AppConfigEntity::class,
         AppUsageEntity::class,
-        FocusSessionEntity::class
+        FocusSessionEntity::class,
+        MutedNotificationEntity::class,
+        DailyRollupEntity::class,
+        LauncherEventEntity::class
     ],
-    version = 2,
+    version = 4,
     exportSchema = false
 )
 abstract class LauncherDatabase : RoomDatabase() {

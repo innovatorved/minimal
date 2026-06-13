@@ -39,4 +39,15 @@ class LauncherRepository(private val launcherDao: LauncherDao) {
     suspend fun insertFocusSession(session: FocusSessionEntity) {
         launcherDao.insertFocusSession(session)
     }
+
+    val mutedNotifications: Flow<List<MutedNotificationEntity>> =
+        launcherDao.getAllMutedNotifications()
+
+    suspend fun markNotificationRead(id: Int) {
+        launcherDao.markNotificationRead(id)
+    }
+
+    suspend fun markAllNotificationsRead() {
+        launcherDao.markAllNotificationsRead()
+    }
 }

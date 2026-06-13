@@ -4,23 +4,8 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Outer delicate focus ring -->
-    <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:fillColor="#00000000"
-        android:pathData="M 54,24 A 30,30 0 1,1 53.9,24 Z" />
-    
-    <!-- Delicate focus crosshairs -->
-    <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="2"
-        android:strokeLineCap="round"
-        android:pathData="M 54,16 L 54,20 M 54,88 L 54,92 M 16,54 L 20,54 M 88,54 L 92,54" />
-    
-    <!-- Central solid point of focus -->
+    <!-- Bold geometric lowercase "m" — Google-style minimal wordmark -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M 54,46 A 8,8 0 1,1 53.9,46 Z" />
+        android:pathData="M31,71V49c0-10,6-16,15-16c4,0,7,2,9,5c2-3,5-5,9-5c9,0,15,6,15,16v22h-7V51c0-4-3-7-7-7s-7,3-7,7v20h-6V51c0-4-3-7-7-7s-7,3-7,7v20H31z" />
 </vector>
