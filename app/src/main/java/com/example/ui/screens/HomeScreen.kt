@@ -20,12 +20,14 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
+import com.example.ui.theme.MinimalFontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AppConfigEntity
+import com.example.service.MutedNotificationListenerService
 import com.example.ui.LauncherViewModel
 import com.example.ui.components.BreathingPauseOverlay
 import com.example.ui.components.DefaultHomeClock
@@ -41,6 +43,7 @@ import java.util.*
 fun HomeScreen(viewModel: LauncherViewModel) {
     val context = LocalContext.current
     val favoriteApps by viewModel.favoriteApps.collectAsState()
+    val priorityNotifications by viewModel.priorityNotifications.collectAsState()
     val is24h by viewModel.is24HourFormat.collectAsState()
     val showBreathing by viewModel.showBreathingPause.collectAsState()
     val shortcutPkg by viewModel.shortcutPackageName.collectAsState()
@@ -49,6 +52,7 @@ fun HomeScreen(viewModel: LauncherViewModel) {
     val dailyGoal by viewModel.dailyGoalMinutes.collectAsState()
     val isFocusActive by viewModel.isFocusActive.collectAsState()
     val focusSecsLeft by viewModel.focusTimerSeconds.collectAsState()
+    val homeDisplayName by viewModel.homeDisplayName.collectAsState()
 
     var currentTime by remember { mutableStateOf("") }
     var currentDate by remember { mutableStateOf("") }
@@ -67,6 +71,10 @@ fun HomeScreen(viewModel: LauncherViewModel) {
     var renameInputText by remember { mutableStateOf("") }
 
     val sweepProgress = if (dailyGoal > 0) totalMinutes.toFloat() / dailyGoal else 0f
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshPriorityNotifications()
+    }
 
     Box(
         modifier = Modifier
@@ -118,12 +126,57 @@ fun HomeScreen(viewModel: LauncherViewModel) {
                         )
                     }
                 }
+                if (homeDisplayName.isNotBlank()) {
+                    Text(
+                        text = homeDisplayName,
+                        color = Color.LightGray,
+                        fontSize = 13.sp,
+                        fontFamily = MinimalFontFamily,
+                        textAlign = TextAlign.Center,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                            .testTag("home_display_name")
+                    )
+                }
             }
 
             Column(
                 modifier = Modifier.fillMaxWidth().weight(2f),
                 verticalArrangement = Arrangement.Top
             ) {
+                if (priorityNotifications.isNotEmpty()) {
+                    priorityNotifications.forEach { notification ->
+                        Text(
+                            text = "${notification.appName.lowercase()} · ${notification.summary}",
+                            color = Color.LightGray,
+                            fontSize = 14.sp,
+                            fontFamily = MinimalFontFamily,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .testTag("priority_notification_${notification.packageName}")
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                } else if (!MutedNotificationListenerService.isEnabled(context)) {
+                    Text(
+                        text = "enable notification listener in settings to show alerts here",
+                        color = Color.DarkGray,
+                        fontSize = 11.sp,
+                        fontFamily = MinimalFontFamily,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.navigateTo(AppScreen.Settings) }
+                            .padding(vertical = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
                 if (favoriteApps.isEmpty()) {
                     Text(
                         text = "no apps pinned. swipe up anywhere for all apps.",
@@ -138,14 +191,14 @@ fun HomeScreen(viewModel: LauncherViewModel) {
                                 text = app.appName.lowercase(),
                                 color = Color.White,
                                 fontSize = 20.sp,
-                                fontFamily = FontFamily.SansSerif,
+                                fontFamily = MinimalFontFamily,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .combinedClickable(
                                         onClick = { viewModel.tryLaunchApp(context, app.packageName, app.appName) },
                                         onLongClick = { selectedAppForMenu = app }
                                     )
-                                    .padding(vertical = 16.dp)
+                                    .padding(vertical = 8.dp)
                                     .testTag("pinned_app_${app.packageName}")
                             )
                         }

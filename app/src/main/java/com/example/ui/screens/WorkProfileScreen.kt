@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
+import com.example.ui.theme.MinimalFontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -106,7 +106,7 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
                         text = "unlock work profile",
                         color = Color.White,
                         fontSize = 18.sp,
-                        fontFamily = FontFamily.SansSerif,
+                        fontFamily = MinimalFontFamily,
                         modifier = Modifier
                             .clickable {
                                 val activity = context as? FragmentActivity
@@ -160,7 +160,7 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
                 BasicTextField(
                     value = workSearch,
                     onValueChange = { viewModel.updateWorkSearchQuery(it) },
-                    textStyle = TextStyle(color = Color.White, fontSize = 18.sp, fontFamily = FontFamily.SansSerif),
+                    textStyle = TextStyle(color = Color.White, fontSize = 18.sp, fontFamily = MinimalFontFamily),
                     singleLine = true,
                     cursorBrush = SolidColor(Color.White),
                     modifier = Modifier
@@ -180,7 +180,7 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
                             text = app.appName.lowercase(),
                             color = Color.White,
                             fontSize = 18.sp,
-                            fontFamily = FontFamily.SansSerif,
+                            fontFamily = MinimalFontFamily,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {

@@ -76,6 +76,9 @@ interface LauncherDao {
     @Query("SELECT * FROM muted_notifications ORDER BY timestamp DESC")
     fun getAllMutedNotifications(): Flow<List<MutedNotificationEntity>>
 
+    @Query("SELECT * FROM muted_notifications WHERE timestamp >= :since ORDER BY timestamp DESC LIMIT :limit")
+    suspend fun getRecentMutedNotifications(since: Long, limit: Int): List<MutedNotificationEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMutedNotification(notification: MutedNotificationEntity)
 

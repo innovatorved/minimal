@@ -6,7 +6,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
+import com.example.ui.theme.MinimalFontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,13 +26,13 @@ fun MinimalToggle(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
     ) {
-        Text(label, color = Color.White, fontSize = 16.sp, fontFamily = FontFamily.SansSerif)
+        Text(label, color = Color.White, fontSize = 16.sp, fontFamily = MinimalFontFamily)
         Text(
             text = if (isOn) "[on]" else "[off]",
             color = Color.White,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            fontFamily = FontFamily.SansSerif
+            fontFamily = MinimalFontFamily
         )
     }
 }

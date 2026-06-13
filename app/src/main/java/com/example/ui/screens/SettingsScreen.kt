@@ -14,6 +14,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import com.example.service.MutedNotificationListenerService
 import com.example.ui.LauncherViewModel
 import com.example.ui.navigation.AppScreen
@@ -32,6 +35,7 @@ fun SettingsScreen(viewModel: LauncherViewModel) {
     val deviceAdminAdb = LauncherUtils.deviceAdminAdbCommand()
     val isDeviceAdmin = LauncherUtils.isDeviceAdminActive(context)
     val hasUsageAccess by viewModel.hasUsageAccess.collectAsState()
+    val hasContactsAccess by viewModel.hasContactsAccess.collectAsState()
     val favoriteApps by viewModel.favoriteApps.collectAsState()
     val renamedApps by viewModel.renamedApps.collectAsState()
     val shortcutAppName by viewModel.shortcutAppName.collectAsState()
@@ -41,7 +45,13 @@ fun SettingsScreen(viewModel: LauncherViewModel) {
     val isScheduledBlocking by viewModel.isScheduledBlockingEnabled.collectAsState()
     var showShortcutPicker by remember { mutableStateOf(false) }
     var showGoalDialog by remember { mutableStateOf(false) }
+    var showDisplayNameDialog by remember { mutableStateOf(false) }
+    val homeDisplayName by viewModel.homeDisplayName.collectAsState()
     val allApps by viewModel.allAppConfigs.collectAsState()
+
+    val contactsPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { _ -> viewModel.onContactsPermissionChanged() }
 
     LaunchedEffect(Unit) {
         viewModel.refreshInsights()
@@ -133,6 +143,22 @@ fun SettingsScreen(viewModel: LauncherViewModel) {
                     Text(adbCmd, color = Color.DarkGray, fontSize = 10.sp, modifier = Modifier.padding(bottom = 12.dp))
                 }
                 MinimalToggle("time format (24h)", is24h, onToggle = { viewModel.toggle24HourFormat() })
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDisplayNameDialog = true }
+                        .padding(vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("home display name", color = Color.White, fontSize = 16.sp)
+                    Text(
+                        homeDisplayName,
+                        color = Color.LightGray,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                        modifier = Modifier.weight(1f, fill = false).padding(start = 16.dp)
+                    )
+                }
                 Text(
                     text = "restore phone colors",
                     color = Color.LightGray,
@@ -196,6 +222,18 @@ fun SettingsScreen(viewModel: LauncherViewModel) {
                         if (MutedNotificationListenerService.isEnabled(context)) "[active]" else "[needs setup]",
                         color = Color.LightGray
                     )
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            contactsPermissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+                        }
+                        .padding(vertical = 14.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("contacts (filter home alerts)", color = Color.White, fontSize = 16.sp)
+                    Text(if (hasContactsAccess) "[active]" else "[needs setup]", color = Color.LightGray)
                 }
             }
             item {
@@ -304,6 +342,42 @@ fun SettingsScreen(viewModel: LauncherViewModel) {
                 }.padding(16.dp))
             },
             dismissButton = { Text("cancel", color = Color.LightGray, modifier = Modifier.clickable { showGoalDialog = false }.padding(16.dp)) }
+        )
+    }
+
+    if (showDisplayNameDialog) {
+        var nameText by remember(homeDisplayName) { mutableStateOf(homeDisplayName) }
+        AlertDialog(
+            onDismissRequest = { showDisplayNameDialog = false },
+            containerColor = Color.Black,
+            title = { Text("home display name", color = Color.White) },
+            text = {
+                Column {
+                    androidx.compose.foundation.text.BasicTextField(
+                        value = nameText,
+                        onValueChange = { nameText = it },
+                        textStyle = androidx.compose.ui.text.TextStyle(color = Color.White, fontSize = 18.sp),
+                        singleLine = true,
+                        cursorBrush = androidx.compose.ui.graphics.SolidColor(Color.White),
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                    )
+                    Text(
+                        "shown below the clock on home",
+                        color = Color.DarkGray,
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            },
+            confirmButton = {
+                Text("save", color = Color.White, modifier = Modifier.clickable {
+                    if (nameText.trim().isNotEmpty()) viewModel.setHomeDisplayName(nameText)
+                    showDisplayNameDialog = false
+                }.padding(16.dp))
+            },
+            dismissButton = {
+                Text("cancel", color = Color.LightGray, modifier = Modifier.clickable { showDisplayNameDialog = false }.padding(16.dp))
+            }
         )
     }
 }

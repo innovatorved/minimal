@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
+import com.example.ui.theme.MinimalFontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AppConfigEntity
@@ -62,7 +62,7 @@ fun AppDrawerScreen(viewModel: LauncherViewModel) {
         BasicTextField(
             value = searchQuery,
             onValueChange = { viewModel.updateSearchQuery(it) },
-            textStyle = TextStyle(color = Color.White, fontSize = 18.sp, fontFamily = FontFamily.SansSerif),
+            textStyle = TextStyle(color = Color.White, fontSize = 18.sp, fontFamily = MinimalFontFamily),
             singleLine = true,
             cursorBrush = SolidColor(Color.White),
             modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp).testTag("drawer_search_field"),
@@ -84,7 +84,7 @@ fun AppDrawerScreen(viewModel: LauncherViewModel) {
                     text = app.appName.lowercase(),
                     color = Color.White.copy(alpha = opacity),
                     fontSize = 18.sp,
-                    fontFamily = FontFamily.SansSerif,
+                    fontFamily = MinimalFontFamily,
                     modifier = Modifier
                         .fillMaxWidth()
                         .combinedClickable(

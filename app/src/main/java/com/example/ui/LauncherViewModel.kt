@@ -5,12 +5,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.analytics.LauncherEventType
 import com.example.analytics.UsageAnalyticsRepository
 import com.example.analytics.UsageInsightsSnapshot
 import com.example.data.*
+import com.example.service.DirectMessageNotificationFilter
+import com.example.service.MutedNotificationListenerService
 import com.example.service.SessionMonitorService
 import com.example.system.AppearanceResult
 import com.example.system.SystemAppearanceController
@@ -35,6 +38,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     companion object {
         private const val WEBSITE_BLOCKING_V2_NOTE =
             "Website blocking requires v2 setup (AccessibilityService or local VPN). Toggle saved for future release."
+        const val DEFAULT_HOME_DISPLAY_NAME = "@innovatorved"
+        private const val PREF_HOME_DISPLAY_NAME = "home_display_name"
     }
 
     private val db = LauncherDatabase.getDatabase(application)
@@ -68,6 +73,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     val mutedNotifications: StateFlow<List<MutedNotificationEntity>> = repository.mutedNotifications
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    private val _priorityNotifications = MutableStateFlow<List<ShortNotificationDisplay>>(emptyList())
+    val priorityNotifications: StateFlow<List<ShortNotificationDisplay>> = _priorityNotifications.asStateFlow()
+
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -85,9 +93,15 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     private var focusJob: Job? = null
     private var usageSyncJob: Job? = null
+    private var priorityRefreshJob: Job? = null
 
     private val _is24HourFormat = MutableStateFlow(prefs.getBoolean("is_24h", false))
     val is24HourFormat: StateFlow<Boolean> = _is24HourFormat.asStateFlow()
+
+    private val _homeDisplayName = MutableStateFlow(
+        prefs.getString(PREF_HOME_DISPLAY_NAME, DEFAULT_HOME_DISPLAY_NAME) ?: DEFAULT_HOME_DISPLAY_NAME
+    )
+    val homeDisplayName: StateFlow<String> = _homeDisplayName.asStateFlow()
 
     private val _dailyGoalMinutes = MutableStateFlow(prefs.getInt("daily_goal_minutes", 180))
     val dailyGoalMinutes: StateFlow<Int> = _dailyGoalMinutes.asStateFlow()
@@ -138,6 +152,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _hasUsageAccess = MutableStateFlow(usageStatsRepository.hasUsageAccess())
     val hasUsageAccess: StateFlow<Boolean> = _hasUsageAccess.asStateFlow()
 
+    private val _hasContactsAccess = MutableStateFlow(hasContactsPermission())
+    val hasContactsAccess: StateFlow<Boolean> = _hasContactsAccess.asStateFlow()
+
     val hasSecureSettings: Boolean get() = appearanceController.hasWriteSecureSettings()
 
     val adbGrantCommand: String get() = appearanceController.adbGrantCommand()
@@ -171,6 +188,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             allAppConfigs.collect { configs -> calculateRenamedApps(configs) }
         }
         startUsageSync()
+        startPriorityNotificationRefresh()
         appearanceController.ensureBlackWallpapers()
         _isWallpaperMatchingEnabled.value = true
         refreshWorkProfileState()
@@ -215,9 +233,11 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     fun onResume() {
         _hasUsageAccess.value = usageStatsRepository.hasUsageAccess()
+        _hasContactsAccess.value = hasContactsPermission()
         appearanceController.ensureBlackWallpapers()
         _isWallpaperMatchingEnabled.value = true
         refreshWorkProfileState()
+        refreshPriorityNotifications()
         viewModelScope.launch {
             if (usageStatsRepository.hasUsageAccess()) {
                 usageStatsRepository.syncTodayUsage(todayDateString())
@@ -252,6 +272,39 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             }
         }
     }
+
+    private fun startPriorityNotificationRefresh() {
+        priorityRefreshJob?.cancel()
+        priorityRefreshJob = viewModelScope.launch {
+            while (true) {
+                refreshPriorityNotifications()
+                delay(3_000)
+            }
+        }
+    }
+
+    fun refreshPriorityNotifications() {
+        _priorityNotifications.value = MutedNotificationListenerService.getPriorityNotifications(
+            context = getApplication(),
+            appConfigs = allAppConfigs.value,
+            maxCount = 3
+        )
+    }
+
+    fun isNotificationListenerEnabled(): Boolean =
+        MutedNotificationListenerService.isEnabled(getApplication())
+
+    fun onContactsPermissionChanged() {
+        _hasContactsAccess.value = hasContactsPermission()
+        DirectMessageNotificationFilter.invalidateContactCache()
+        refreshPriorityNotifications()
+    }
+
+    private fun hasContactsPermission(): Boolean =
+        ContextCompat.checkSelfPermission(
+            getApplication(),
+            android.Manifest.permission.READ_CONTACTS
+        ) == PackageManager.PERMISSION_GRANTED
 
     fun completeOnboarding(context: Context) {
         prefs.edit().putBoolean("onboarding_complete", true).apply()
@@ -359,6 +412,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         if (_isWallpaperMatchingEnabled.value) {
             appearanceController.ensureBlackWallpapers()
         }
+    }
+
+    fun setHomeDisplayName(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        _homeDisplayName.value = trimmed
+        prefs.edit().putString(PREF_HOME_DISPLAY_NAME, trimmed).apply()
     }
 
     fun setDailyGoalMinutes(minutes: Int) {

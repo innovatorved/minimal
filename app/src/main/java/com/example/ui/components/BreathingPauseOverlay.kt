@@ -7,7 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontFamily
+import com.example.ui.theme.MinimalFontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
@@ -34,7 +34,7 @@ fun BreathingPauseOverlay(visible: Boolean) {
             color = Color.White,
             fontSize = 28.sp,
             fontWeight = FontWeight.Normal,
-            fontFamily = FontFamily.SansSerif,
+            fontFamily = MinimalFontFamily,
             textAlign = TextAlign.Center
         )
     }

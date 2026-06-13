@@ -8,7 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.font.FontFamily
+import com.example.ui.theme.MinimalFontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,7 +49,7 @@ fun TimeRing(
                 color = Color.White,
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.SansSerif,
+                fontFamily = MinimalFontFamily,
                 textAlign = TextAlign.Center
             )
             if (isFocusActive) {
@@ -59,7 +59,7 @@ fun TimeRing(
                     text = String.format("%02d:%02d left", minutes, seconds),
                     color = Color.LightGray,
                     fontSize = 11.sp,
-                    fontFamily = FontFamily.SansSerif,
+                    fontFamily = MinimalFontFamily,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             } else {
@@ -67,7 +67,7 @@ fun TimeRing(
                     text = currentDate,
                     color = Color.LightGray,
                     fontSize = 13.sp,
-                    fontFamily = FontFamily.SansSerif,
+                    fontFamily = MinimalFontFamily,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(top = 4.dp)
                 )
