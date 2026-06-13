@@ -22,7 +22,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import com.example.ui.theme.MinimalFontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,7 +29,6 @@ import com.example.data.AppConfigEntity
 import com.example.service.MutedNotificationListenerService
 import com.example.ui.LauncherViewModel
 import com.example.ui.components.BreathingPauseOverlay
-import com.example.ui.components.DefaultHomeClock
 import com.example.ui.components.HomeWidget
 import com.example.ui.components.pixelHomeDrawerSwipe
 import com.example.ui.navigation.AppScreen
@@ -112,33 +110,15 @@ fun HomeScreen(viewModel: LauncherViewModel) {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (activeWidgets.isEmpty()) {
-                    DefaultHomeClock(currentTime = currentTime, currentDate = currentDate)
-                } else {
-                    activeWidgets.forEach { widgetId ->
-                        HomeWidget(
-                            widgetId = widgetId,
-                            currentTime = currentTime,
-                            currentDate = currentDate,
-                            sweepProgress = sweepProgress,
-                            isFocusActive = isFocusActive,
-                            focusSecsLeft = focusSecsLeft
-                        )
-                    }
-                }
-                if (homeDisplayName.isNotBlank()) {
-                    Text(
-                        text = homeDisplayName,
-                        color = Color.LightGray,
-                        fontSize = 13.sp,
-                        fontFamily = MinimalFontFamily,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 16.dp)
-                            .testTag("home_display_name")
+                activeWidgets.forEach { widgetId ->
+                    HomeWidget(
+                        widgetId = widgetId,
+                        currentTime = currentTime,
+                        currentDate = currentDate,
+                        homeDisplayName = homeDisplayName,
+                        sweepProgress = sweepProgress,
+                        isFocusActive = isFocusActive,
+                        focusSecsLeft = focusSecsLeft
                     )
                 }
             }

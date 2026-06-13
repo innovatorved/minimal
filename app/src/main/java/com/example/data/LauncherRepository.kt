@@ -24,6 +24,10 @@ class LauncherRepository(private val launcherDao: LauncherDao) {
         launcherDao.updateAppConfig(config)
     }
 
+    suspend fun deleteAppConfig(packageName: String) {
+        launcherDao.deleteAppConfig(packageName)
+    }
+
     suspend fun recordAppLaunch(packageName: String, appName: String, date: String) {
         launcherDao.recordAppLaunch(packageName, appName, date)
     }

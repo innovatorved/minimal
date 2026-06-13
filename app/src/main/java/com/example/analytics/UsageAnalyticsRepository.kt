@@ -31,6 +31,7 @@ class UsageAnalyticsRepository(
         usageStatsRepository.syncUsageForDate(date)
 
         val usageRows = dao.getUsageForDate(date).first()
+            .filter { !UsageStatsRepository.isExcludedFromScreenTime(it.packageName) }
         val totalScreenMinutes = usageRows.sumOf { it.durationMinutes }
         val totalOpens = dao.sumOpensForDate(date) ?: 0
         val blockedAttempts = dao.sumBlockedForDate(date) ?: 0
@@ -87,10 +88,14 @@ class UsageAnalyticsRepository(
             null
         }
 
-        val topToday = dao.topAppsBetween(today, today, 5).map { row ->
+        val topToday = dao.topAppsBetween(today, today, 5)
+            .filter { !UsageStatsRepository.isExcludedFromScreenTime(it.packageName) }
+            .map { row ->
             AppUsageSummary(row.packageName, row.appName, row.durationMinutes, row.openCount)
         }
-        val topWeek = dao.topAppsBetween(weekStart, today, 5).map { row ->
+        val topWeek = dao.topAppsBetween(weekStart, today, 5)
+            .filter { !UsageStatsRepository.isExcludedFromScreenTime(it.packageName) }
+            .map { row ->
             AppUsageSummary(row.packageName, row.appName, row.durationMinutes, row.openCount)
         }
 

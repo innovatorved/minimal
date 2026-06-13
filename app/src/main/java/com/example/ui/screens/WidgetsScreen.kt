@@ -20,6 +20,7 @@ import com.example.ui.components.LauncherBackBar
 private val widgetDescriptions = mapOf(
     "clock" to "centered time display",
     "date" to "current day and date",
+    "display name" to "custom label — edit text in settings → display",
     "battery" to "battery level text",
     "focus ring" to "progress ring around clock",
     "calendar (next event)" to "next upcoming calendar event"
@@ -40,6 +41,12 @@ fun WidgetsScreen(viewModel: LauncherViewModel) {
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(vertical = 16.dp)
+        )
+        Text(
+            "on by default — remove or reorder below",
+            color = Color.DarkGray,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(bottom = 8.dp)
         )
 
         LazyColumn(modifier = Modifier.weight(1f)) {

@@ -40,6 +40,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             "Website blocking requires v2 setup (AccessibilityService or local VPN). Toggle saved for future release."
         const val DEFAULT_HOME_DISPLAY_NAME = "@innovatorved"
         private const val PREF_HOME_DISPLAY_NAME = "home_display_name"
+        private const val PREF_ACTIVE_WIDGETS = "active_widgets"
+        private const val PREF_WIDGETS_SEEDED = "widgets_seeded_v1"
+        val DEFAULT_ACTIVE_WIDGETS = listOf("clock", "date", "display name")
     }
 
     private val db = LauncherDatabase.getDatabase(application)
@@ -68,6 +71,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     val usageReport: StateFlow<List<AppUsageEntity>> = selectedDate
         .flatMapLatest { date -> repository.getUsageForDate(date) }
+        .map { usage ->
+            usage.filter { !UsageStatsRepository.isExcludedFromScreenTime(it.packageName) }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val mutedNotifications: StateFlow<List<MutedNotificationEntity>> = repository.mutedNotifications
@@ -141,10 +147,45 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _shortcutAppName = MutableStateFlow(prefs.getString("shortcut_name", null))
     val shortcutAppName: StateFlow<String?> = _shortcutAppName.asStateFlow()
 
-    private val _activeWidgets = MutableStateFlow<List<String>>(
-        prefs.getString("active_widgets", "")?.split(",")?.filter { it.isNotEmpty() } ?: emptyList()
-    )
+    private val _activeWidgets = MutableStateFlow(loadActiveWidgets())
     val activeWidgets: StateFlow<List<String>> = _activeWidgets.asStateFlow()
+
+    private fun loadActiveWidgets(): List<String> {
+        if (!prefs.contains(PREF_ACTIVE_WIDGETS)) {
+            return DEFAULT_ACTIVE_WIDGETS
+        }
+        return prefs.getString(PREF_ACTIVE_WIDGETS, "")
+            ?.split(",")
+            ?.filter { it.isNotEmpty() }
+            ?: emptyList()
+    }
+
+    private fun ensureDefaultWidgets() {
+        if (!prefs.contains(PREF_ACTIVE_WIDGETS)) {
+            saveActiveWidgets(DEFAULT_ACTIVE_WIDGETS)
+            prefs.edit().putBoolean(PREF_WIDGETS_SEEDED, true).apply()
+            return
+        }
+        if (!prefs.getBoolean(PREF_WIDGETS_SEEDED, false)) {
+            val stored = prefs.getString(PREF_ACTIVE_WIDGETS, "") ?: ""
+            if (stored.isEmpty()) {
+                saveActiveWidgets(DEFAULT_ACTIVE_WIDGETS)
+            }
+            prefs.edit().putBoolean(PREF_WIDGETS_SEEDED, true).apply()
+        }
+    }
+
+    private fun ensureDefaultHomeDisplayName() {
+        if (!prefs.contains(PREF_HOME_DISPLAY_NAME)) {
+            prefs.edit().putString(PREF_HOME_DISPLAY_NAME, DEFAULT_HOME_DISPLAY_NAME).apply()
+            _homeDisplayName.value = DEFAULT_HOME_DISPLAY_NAME
+        }
+    }
+
+    private fun saveActiveWidgets(widgets: List<String>) {
+        _activeWidgets.value = widgets
+        prefs.edit().putString(PREF_ACTIVE_WIDGETS, widgets.joinToString(",")).apply()
+    }
 
     private val _renamedApps = MutableStateFlow<List<AppConfigEntity>>(emptyList())
     val renamedApps: StateFlow<List<AppConfigEntity>> = _renamedApps.asStateFlow()
@@ -178,11 +219,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     val insights: StateFlow<UsageInsightsSnapshot?> = _insights.asStateFlow()
 
     init {
-        val legacyWidgets = prefs.getString("active_widgets", "") ?: ""
-        if (legacyWidgets.contains("clock") || legacyWidgets.contains("focus ring")) {
-            prefs.edit().putString("active_widgets", "").apply()
-            _activeWidgets.value = emptyList()
-        }
+        ensureDefaultWidgets()
+        ensureDefaultHomeDisplayName()
         viewModelScope.launch {
             bootstrapApps(getApplication())
             allAppConfigs.collect { configs -> calculateRenamedApps(configs) }
@@ -307,6 +345,8 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         ) == PackageManager.PERMISSION_GRANTED
 
     fun completeOnboarding(context: Context) {
+        ensureDefaultWidgets()
+        ensureDefaultHomeDisplayName()
         prefs.edit().putBoolean("onboarding_complete", true).apply()
         appearanceController.ensureBlackWallpapers()
         _isWallpaperMatchingEnabled.value = true
@@ -321,10 +361,12 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun goHome() {
+        _searchQuery.value = ""
         navigator.goHome { lockWorkProfile() }
     }
 
     fun openDrawer() {
+        _searchQuery.value = ""
         navigator.openDrawer()
         logLauncherEvent(LauncherEventType.DRAWER_OPEN)
     }
@@ -526,16 +568,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val current = _activeWidgets.value.toMutableList()
         if (!current.contains(widgetId)) {
             current.add(widgetId)
-            _activeWidgets.value = current
-            prefs.edit().putString("active_widgets", current.joinToString(",")).apply()
+            saveActiveWidgets(current)
         }
     }
 
     fun removeWidget(widgetId: String) {
         val current = _activeWidgets.value.toMutableList()
         current.remove(widgetId)
-        _activeWidgets.value = current
-        prefs.edit().putString("active_widgets", current.joinToString(",")).apply()
+        saveActiveWidgets(current)
     }
 
     fun moveWidget(widgetId: String, moveUp: Boolean) {
@@ -545,8 +585,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         val targetIndex = if (moveUp) index - 1 else index + 1
         if (targetIndex in current.indices) {
             Collections.swap(current, index, targetIndex)
-            _activeWidgets.value = current
-            prefs.edit().putString("active_widgets", current.joinToString(",")).apply()
+            saveActiveWidgets(current)
         }
     }
 
@@ -771,6 +810,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
         val configs = launchables.mapNotNull { info ->
             val pName = info.activityInfo?.packageName ?: return@mapNotNull null
+            if (pName == context.packageName) return@mapNotNull null
             val label = info.loadLabel(pm)?.toString() ?: ""
             val existing = existingConfigs.find { it.packageName == pName }
             AppConfigEntity(
@@ -784,6 +824,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
             )
         }.distinctBy { it.packageName }
 
+        repository.deleteAppConfig(context.packageName)
         repository.insertAppConfigs(configs)
     }
 

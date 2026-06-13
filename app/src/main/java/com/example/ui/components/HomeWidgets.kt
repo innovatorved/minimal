@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -8,6 +9,7 @@ import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.MinimalFontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.util.rememberBatteryLevel
@@ -38,6 +40,7 @@ fun HomeWidget(
     widgetId: String,
     currentTime: String,
     currentDate: String,
+    homeDisplayName: String,
     sweepProgress: Float,
     isFocusActive: Boolean,
     focusSecsLeft: Int
@@ -60,6 +63,22 @@ fun HomeWidget(
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(vertical = 8.dp)
         )
+        "display name" -> {
+            if (homeDisplayName.isNotBlank()) {
+                Text(
+                    text = homeDisplayName,
+                    color = Color.LightGray,
+                    fontSize = 13.sp,
+                    fontFamily = MinimalFontFamily,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
+                )
+            }
+        }
         "battery" -> Text(
             text = rememberBatteryLevel().lowercase(),
             color = Color.LightGray,
@@ -75,13 +94,18 @@ fun HomeWidget(
             focusSecsLeft = focusSecsLeft,
             modifier = Modifier.padding(vertical = 8.dp)
         )
-        "calendar (next event)" -> Text(
-            text = rememberNextCalendarEvent().lowercase(),
-            color = Color.LightGray,
-            fontSize = 14.sp,
-            fontFamily = MinimalFontFamily,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(vertical = 8.dp)
-        )
+        "calendar (next event)" -> {
+            val eventText = rememberNextCalendarEvent()
+            if (eventText.isNotBlank()) {
+                Text(
+                    text = eventText.lowercase(),
+                    color = Color.LightGray,
+                    fontSize = 14.sp,
+                    fontFamily = MinimalFontFamily,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
+        }
     }
 }

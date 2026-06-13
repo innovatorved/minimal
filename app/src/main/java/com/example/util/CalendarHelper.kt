@@ -11,7 +11,7 @@ import java.util.*
 @Composable
 fun rememberNextCalendarEvent(): String {
     val context = androidx.compose.ui.platform.LocalContext.current
-    var event by remember { mutableStateOf("no upcoming events") }
+    var event by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         event = withContext(Dispatchers.IO) { fetchNextEvent(context) }
@@ -43,8 +43,8 @@ private fun fetchNextEvent(context: Context): String {
                     val begin = cursor.getLong(1)
                     val time = SimpleDateFormat("h:mm a", Locale.getDefault()).format(Date(begin))
                     "$time $title"
-                } else "no upcoming events"
-            } ?: "no upcoming events"
+                } else ""
+            } ?: ""
     } catch (_: Exception) {
         "calendar unavailable"
     }

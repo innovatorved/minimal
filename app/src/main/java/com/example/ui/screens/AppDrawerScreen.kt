@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.example.data.AppConfigEntity
 import com.example.ui.LauncherViewModel
 import com.example.ui.navigation.AppScreen
+import com.example.usage.UsageStatsRepository
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -37,6 +38,7 @@ fun AppDrawerScreen(viewModel: LauncherViewModel) {
     val listState = rememberLazyListState()
 
     val filteredApps = allApps
+        .filter { !UsageStatsRepository.isExcludedFromScreenTime(it.packageName) }
         .filter { it.appName.contains(searchQuery, ignoreCase = true) }
         .sortedBy { it.appName.lowercase() }
     val hasWorkProfile by viewModel.hasWorkProfile.collectAsState()

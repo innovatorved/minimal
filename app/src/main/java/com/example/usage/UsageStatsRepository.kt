@@ -24,6 +24,16 @@ class UsageStatsRepository(
     private val context: Context,
     private val dao: LauncherDao
 ) {
+    companion object {
+        val SCREEN_TIME_EXCLUDED_PACKAGES = setOf(
+            "com.minimalist.launcher",
+            "com.android.systemui"
+        )
+
+        fun isExcludedFromScreenTime(packageName: String): Boolean =
+            packageName in SCREEN_TIME_EXCLUDED_PACKAGES
+    }
+
     private val usageStatsManager: UsageStatsManager? =
         context.getSystemService(Context.USAGE_STATS_SERVICE) as? UsageStatsManager
 
@@ -65,6 +75,8 @@ class UsageStatsRepository(
     suspend fun syncUsageForDate(date: String) {
         if (!hasUsageAccess() || usageStatsManager === null) return
 
+        dao.deleteUsageForPackages(date, SCREEN_TIME_EXCLUDED_PACKAGES.toList())
+
         val (start, end) = dayBoundsMillis(date)
         val stats = usageStatsManager.queryUsageStats(
             UsageStatsManager.INTERVAL_DAILY,
@@ -75,6 +87,7 @@ class UsageStatsRepository(
         val appNames = dao.getAllAppConfigs().first().associate { it.packageName to it.appName }
 
         for (stat in stats) {
+            if (isExcludedFromScreenTime(stat.packageName)) continue
             if (stat.totalTimeInForeground <= 0L) continue
             val minutes = TimeUnit.MILLISECONDS.toMinutes(stat.totalTimeInForeground).toInt()
             if (minutes <= 0) continue
@@ -123,6 +136,7 @@ class UsageStatsRepository(
         val event = UsageEvents.Event()
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
+            if (isExcludedFromScreenTime(event.packageName)) continue
             if (event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND) {
                 lastPkg = event.packageName
             }
@@ -138,7 +152,9 @@ class UsageStatsRepository(
             start,
             end
         ) ?: return 0
-        return stats.sumOf { TimeUnit.MILLISECONDS.toMinutes(it.totalTimeInForeground).toInt() }
+        return stats
+            .filter { !isExcludedFromScreenTime(it.packageName) }
+            .sumOf { TimeUnit.MILLISECONDS.toMinutes(it.totalTimeInForeground).toInt() }
     }
 
     fun getPeakHourForDate(date: String): Int? {
@@ -150,6 +166,7 @@ class UsageStatsRepository(
         var sessionStart: Long? = null
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
+            if (isExcludedFromScreenTime(event.packageName)) continue
             when (event.eventType) {
                 UsageEvents.Event.ACTIVITY_RESUMED,
                 UsageEvents.Event.MOVE_TO_FOREGROUND -> {
@@ -181,6 +198,7 @@ class UsageStatsRepository(
         var lastHour: Int? = null
         while (events.hasNextEvent()) {
             events.getNextEvent(event)
+            if (isExcludedFromScreenTime(event.packageName)) continue
             if (event.eventType == UsageEvents.Event.ACTIVITY_RESUMED ||
                 event.eventType == UsageEvents.Event.MOVE_TO_FOREGROUND
             ) {

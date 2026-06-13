@@ -21,6 +21,9 @@ interface LauncherDao {
     @Update
     suspend fun updateAppConfig(config: AppConfigEntity)
 
+    @Query("DELETE FROM app_config WHERE packageName = :packageName")
+    suspend fun deleteAppConfig(packageName: String)
+
     // --- App Usage Queries ---
     @Query("SELECT * FROM app_usage WHERE date = :date ORDER BY (durationMinutes * 60 + openCount) DESC")
     fun getUsageForDate(date: String): Flow<List<AppUsageEntity>>
@@ -33,6 +36,9 @@ interface LauncherDao {
 
     @Update
     suspend fun updateUsage(usage: AppUsageEntity)
+
+    @Query("DELETE FROM app_usage WHERE date = :date AND packageName IN (:packages)")
+    suspend fun deleteUsageForPackages(date: String, packages: List<String>)
 
     // Helper to increment launch or log duration
     @Transaction
