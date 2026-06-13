@@ -69,9 +69,13 @@ fun LauncherContainer(viewModel: LauncherViewModel) {
     val currentScreen by viewModel.currentScreen.collectAsState()
     val navigationDirection by viewModel.navigationDirection.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
-    val canSwipeBack = currentScreen != AppScreen.Home &&
-        currentScreen != AppScreen.Onboarding &&
+    val swipeBackEnabled = currentScreen != AppScreen.Onboarding &&
         currentScreen != AppScreen.AppDrawer
+    val onSwipeBack: () -> Unit = if (currentScreen == AppScreen.Home) {
+        { /* consume edge swipe on launcher root — no navigation */ }
+    } else {
+        { viewModel.goHome() }
+    }
     // Home → drawer locally. AppDrawer scrolls freely. Other screens: bottom-edge swipe only.
     val bottomSwipeHomeEnabled = currentScreen != AppScreen.Onboarding &&
         currentScreen != AppScreen.AppDrawer &&
@@ -87,6 +91,10 @@ fun LauncherContainer(viewModel: LauncherViewModel) {
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    BackHandler(enabled = currentScreen == AppScreen.Home) {
+        // Launcher root: consume system back so we don't flash a transition back to home.
+    }
+
     BackHandler(enabled = currentScreen != AppScreen.Home && currentScreen != AppScreen.Onboarding) {
         viewModel.goHome()
     }
@@ -99,7 +107,7 @@ fun LauncherContainer(viewModel: LauncherViewModel) {
                     enabled = bottomSwipeHomeEnabled,
                     onSwipeHome = { viewModel.goHome() }
                 )
-                .launcherSwipeBack(enabled = canSwipeBack, onBack = { viewModel.goHome() })
+                .launcherSwipeBack(enabled = swipeBackEnabled, onBack = onSwipeBack)
         ) {
             AnimatedContent(
                 modifier = Modifier

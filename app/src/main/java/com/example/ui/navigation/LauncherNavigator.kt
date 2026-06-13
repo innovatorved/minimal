@@ -26,6 +26,7 @@ class LauncherNavigator(initialScreen: AppScreen) {
     }
 
     fun goHome(onLeaveWorkProfile: () -> Unit = {}) {
+        if (_currentScreen.value == AppScreen.Home) return
         onLeaveWorkProfile()
         _navigationDirection.value = NavigationDirection.Back
         screenHistory.clear()

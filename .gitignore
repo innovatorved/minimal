@@ -1,7 +1,7 @@
 *.iml
 .gradle
 .kotlin
-/local.properties
+local.properties
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
@@ -13,6 +13,6 @@
 /captures
 .externalNativeBuild
 .cxx
-local.properties
+*.apk
+*.idsig
 debug.keystore
-.cursor

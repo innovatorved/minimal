@@ -1,6 +1,0 @@
-{
-  "name": "Focus Launcher",
-  "description": "Minimal — a distraction-free text-only Android launcher with offline usage insights, focus sessions, and app blocking.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
-}

@@ -3,10 +3,13 @@ package com.example.usage
 import android.app.AppOpsManager
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Process
 import android.provider.Settings
+import android.widget.Toast
 import com.example.data.AppUsageEntity
 import com.example.data.LauncherDao
 import com.example.util.todayDateString
@@ -35,9 +38,24 @@ class UsageStatsRepository(
     }
 
     fun openUsageAccessSettings() {
-        context.startActivity(
-            Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
+        val packageIntent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
+            data = Uri.parse("package:${context.packageName}")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            context.startActivity(packageIntent)
+            return
+        } catch (_: ActivityNotFoundException) {
+            // Fall back to the generic usage-access list on devices that ignore package URI.
+        }
+        try {
+            context.startActivity(
+                Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(context, "could not open usage access settings", Toast.LENGTH_SHORT).show()
+        }
     }
 
     suspend fun syncTodayUsage(date: String = todayDateString()) {

@@ -1,14 +1,18 @@
 package com.example.util
 
+import android.app.Activity
 import android.app.admin.DevicePolicyManager
+import android.app.role.RoleManager
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.os.Build
-import android.app.role.RoleManager
+import android.provider.Settings
+import android.widget.Toast
 import com.example.BuildConfig
 import com.example.deviceadmin.LauncherDeviceAdminReceiver
-import android.provider.Settings
 
 object LauncherUtils {
 
@@ -44,7 +48,11 @@ object LauncherUtils {
         return dpm.isAdminActive(admin)
     }
 
-    fun requestDeviceAdmin(context: Context) {
+    fun requestDeviceAdmin(context: Context): Boolean {
+        if (isDeviceAdminActive(context)) {
+            Toast.makeText(context, "device admin already enabled", Toast.LENGTH_SHORT).show()
+            return true
+        }
         val admin = ComponentName(context, LauncherDeviceAdminReceiver::class.java)
         val intent = Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN).apply {
             putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, admin)
@@ -52,9 +60,28 @@ object LauncherUtils {
                 DevicePolicyManager.EXTRA_ADD_EXPLANATION,
                 "Required for double-tap screen lock"
             )
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(intent)
+        val activity = context.findActivity()
+        try {
+            if (activity !== null) {
+                activity.startActivity(intent)
+            } else {
+                context.startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            }
+            return true
+        } catch (_: ActivityNotFoundException) {
+            Toast.makeText(context, "could not open device admin setup", Toast.LENGTH_SHORT).show()
+            return false
+        }
+    }
+
+    private fun Context.findActivity(): Activity? {
+        var current: Context? = this
+        while (current is ContextWrapper) {
+            if (current is Activity) return current
+            current = current.baseContext
+        }
+        return null
     }
 
     fun deviceAdminAdbCommand(): String =

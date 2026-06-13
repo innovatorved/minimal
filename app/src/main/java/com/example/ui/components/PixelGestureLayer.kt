@@ -153,16 +153,14 @@ fun Modifier.launcherSwipeBack(
         detectHorizontalDragGestures(
             onDragStart = { totalDrag = 0f },
             onDragEnd = {
-                if (totalDrag >= thresholdPx) {
+                if (abs(totalDrag) >= thresholdPx) {
                     onBack()
                 }
                 totalDrag = 0f
             },
             onHorizontalDrag = { change, dragAmount ->
-                if (dragAmount > 0f) {
-                    totalDrag += dragAmount
-                    change.consume()
-                }
+                totalDrag += dragAmount
+                change.consume()
             }
         )
     }
