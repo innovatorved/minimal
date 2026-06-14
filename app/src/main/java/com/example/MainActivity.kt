@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,7 +18,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Lifecycle
@@ -30,7 +30,11 @@ import com.example.ui.navigation.AppScreen
 import com.example.ui.components.launcherSwipeBack
 import com.example.ui.components.pixelBottomSwipeHome
 import com.example.ui.screens.*
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.LocalView
+import com.example.ui.theme.LauncherThemes
 import com.example.ui.theme.MyApplicationTheme
+import com.example.ui.theme.launcherBackground
 
 class MainActivity : FragmentActivity() {
 
@@ -41,12 +45,15 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = false
-        }
         setContent {
-            MyApplicationTheme {
-                val viewModel: LauncherViewModel = viewModel()
+            val viewModel: LauncherViewModel = viewModel()
+            val themeColorId by viewModel.themeColorId.collectAsState()
+            val isLightTheme = LauncherThemes.presetForId(themeColorId).colors.isLightBackground
+            val view = LocalView.current
+            SideEffect {
+                WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = isLightTheme
+            }
+            MyApplicationTheme(themeId = themeColorId) {
                 if (intent.getBooleanExtra(EXTRA_SHOW_BREATHING, false)) {
                     DisposableEffect(Unit) {
                         viewModel.triggerBreathingPause()
@@ -68,6 +75,7 @@ class MainActivity : FragmentActivity() {
 fun LauncherContainer(viewModel: LauncherViewModel) {
     val currentScreen by viewModel.currentScreen.collectAsState()
     val navigationDirection by viewModel.navigationDirection.collectAsState()
+    val themeColorId by viewModel.themeColorId.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
     val swipeBackEnabled = currentScreen != AppScreen.Onboarding &&
         currentScreen != AppScreen.AppDrawer
@@ -99,7 +107,7 @@ fun LauncherContainer(viewModel: LauncherViewModel) {
         viewModel.goHome()
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = Color.Black) {
+    Surface(modifier = Modifier.fillMaxSize(), color = launcherBackground()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -112,8 +120,10 @@ fun LauncherContainer(viewModel: LauncherViewModel) {
             AnimatedContent(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(launcherBackground())
                     .windowInsetsPadding(WindowInsets.safeDrawing),
                 targetState = currentScreen,
+                contentKey = { screen -> "${screen::class.simpleName}_$themeColorId" },
                 transitionSpec = { launcherScreenTransition(navigationDirection) },
                 label = "launcher_screen"
             ) { screen ->

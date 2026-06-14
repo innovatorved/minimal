@@ -6,8 +6,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.MinimalFontFamily
+import com.example.ui.theme.launcherBackground
+import com.example.ui.theme.launcherOnBackground
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
@@ -26,12 +27,12 @@ fun BreathingPauseOverlay(visible: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
+            .background(launcherBackground()),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = phase,
-            color = Color.White,
+            color = launcherOnBackground(),
             fontSize = 28.sp,
             fontWeight = FontWeight.Normal,
             fontFamily = MinimalFontFamily,

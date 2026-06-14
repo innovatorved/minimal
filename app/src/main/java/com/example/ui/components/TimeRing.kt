@@ -6,9 +6,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import com.example.ui.theme.MinimalFontFamily
+import com.example.ui.theme.launcherOnBackground
+import com.example.ui.theme.launcherSecondary
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -23,17 +24,18 @@ fun TimeRing(
     focusSecsLeft: Int,
     modifier: Modifier = Modifier
 ) {
+    val ringColor = launcherOnBackground()
     Box(
         modifier = modifier.size(180.dp),
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawCircle(
-                color = Color.White.copy(alpha = 0.15f),
+                color = ringColor.copy(alpha = 0.15f),
                 style = Stroke(width = 2.dp.toPx())
             )
             drawArc(
-                color = Color.White,
+                color = ringColor,
                 startAngle = -90f,
                 sweepAngle = sweepProgress.coerceIn(0.01f, 1f) * 360f,
                 useCenter = false,
@@ -46,7 +48,7 @@ fun TimeRing(
         ) {
             Text(
                 text = currentTime,
-                color = Color.White,
+                color = ringColor,
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
                 fontFamily = MinimalFontFamily,
@@ -57,7 +59,7 @@ fun TimeRing(
                 val seconds = focusSecsLeft % 60
                 Text(
                     text = String.format("%02d:%02d left", minutes, seconds),
-                    color = Color.LightGray,
+                    color = launcherSecondary(),
                     fontSize = 11.sp,
                     fontFamily = MinimalFontFamily,
                     modifier = Modifier.padding(top = 4.dp)
@@ -65,7 +67,7 @@ fun TimeRing(
             } else {
                 Text(
                     text = currentDate,
-                    color = Color.LightGray,
+                    color = launcherSecondary(),
                     fontSize = 13.sp,
                     fontFamily = MinimalFontFamily,
                     textAlign = TextAlign.Center,

@@ -14,21 +14,26 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextStyle
 import com.example.ui.theme.MinimalFontFamily
-import androidx.compose.ui.text.font.FontWeight
+import com.example.ui.theme.launcherBackground
+import com.example.ui.theme.launcherDialogContainer
+import com.example.ui.theme.launcherMuted
+import com.example.ui.theme.launcherOnBackground
+import com.example.ui.theme.launcherSecondary
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.AppConfigEntity
 import com.example.service.MutedNotificationListenerService
 import com.example.ui.LauncherViewModel
+import com.example.ui.components.AppPickerDialog
 import com.example.ui.components.BreathingPauseOverlay
+import com.example.ui.components.HomeQuickShortcuts
 import com.example.ui.components.HomeWidget
 import com.example.ui.components.pixelHomeDrawerSwipe
 import com.example.ui.navigation.AppScreen
@@ -54,6 +59,7 @@ fun HomeScreen(viewModel: LauncherViewModel) {
 
     var currentTime by remember { mutableStateOf("") }
     var currentDate by remember { mutableStateOf("") }
+    var showPaymentPicker by remember { mutableStateOf(false) }
 
     LaunchedEffect(is24h) {
         while (true) {
@@ -82,7 +88,7 @@ fun HomeScreen(viewModel: LauncherViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(launcherBackground())
                 .padding(horizontal = 24.dp)
                 .padding(top = 16.dp, bottom = 24.dp)
                 .pointerInput(Unit) {
@@ -131,7 +137,7 @@ fun HomeScreen(viewModel: LauncherViewModel) {
                     priorityNotifications.forEach { notification ->
                         Text(
                             text = "${notification.appName.lowercase()} · ${notification.summary}",
-                            color = Color.LightGray,
+                            color = launcherSecondary(),
                             fontSize = 14.sp,
                             fontFamily = MinimalFontFamily,
                             maxLines = 1,
@@ -146,7 +152,7 @@ fun HomeScreen(viewModel: LauncherViewModel) {
                 } else if (!MutedNotificationListenerService.isEnabled(context)) {
                     Text(
                         text = "enable notification listener in settings to show alerts here",
-                        color = Color.DarkGray,
+                        color = launcherMuted(),
                         fontSize = 11.sp,
                         fontFamily = MinimalFontFamily,
                         modifier = Modifier
@@ -160,7 +166,7 @@ fun HomeScreen(viewModel: LauncherViewModel) {
                 if (favoriteApps.isEmpty()) {
                     Text(
                         text = "no apps pinned. swipe up anywhere for all apps.",
-                        color = Color.DarkGray,
+                        color = launcherMuted(),
                         fontSize = 14.sp,
                         modifier = Modifier.padding(vertical = 16.dp)
                     )
@@ -169,7 +175,7 @@ fun HomeScreen(viewModel: LauncherViewModel) {
                         items(favoriteApps.take(8)) { app ->
                             Text(
                                 text = app.appName.lowercase(),
-                                color = Color.White,
+                                color = launcherOnBackground(),
                                 fontSize = 20.sp,
                                 fontFamily = MinimalFontFamily,
                                 modifier = Modifier
@@ -186,15 +192,20 @@ fun HomeScreen(viewModel: LauncherViewModel) {
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                contentAlignment = Alignment.Center
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                HomeQuickShortcuts(
+                    onGoogleClick = { viewModel.launchGoogle(context) },
+                    onPaymentClick = {
+                        viewModel.launchPaymentApp(context) { showPaymentPicker = true }
+                    },
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
                 Text(
                     text = "all apps",
-                    color = Color.LightGray,
+                    color = launcherSecondary(),
                     fontSize = 14.sp,
                     modifier = Modifier
                         .clickable { viewModel.openDrawer() }
@@ -206,17 +217,30 @@ fun HomeScreen(viewModel: LauncherViewModel) {
         BreathingPauseOverlay(visible = showBreathing)
     }
 
+    if (showPaymentPicker) {
+        AppPickerDialog(
+            title = "choose payment app",
+            apps = viewModel.paymentAppCandidates(),
+            onSelect = { app ->
+                viewModel.assignPaymentApp(app.appName, app.packageName)
+                showPaymentPicker = false
+                viewModel.launchAppDirect(context, app.packageName, app.appName)
+            },
+            onDismiss = { showPaymentPicker = false }
+        )
+    }
+
     selectedAppForMenu?.let { app ->
         AlertDialog(
             onDismissRequest = { selectedAppForMenu = null },
-            containerColor = Color.Black,
-            title = { Text(app.appName.lowercase(), color = Color.White, fontSize = 14.sp) },
+            containerColor = launcherDialogContainer(),
+            title = { Text(app.appName.lowercase(), color = launcherOnBackground(), fontSize = 14.sp) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     listOf("rename", "move up", "move down", "remove from home").forEach { action ->
                         Text(
                             text = action,
-                            color = if (action == "remove from home") Color.LightGray else Color.White,
+                            color = if (action == "remove from home") launcherSecondary() else launcherOnBackground(),
                             fontSize = 16.sp,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -235,36 +259,36 @@ fun HomeScreen(viewModel: LauncherViewModel) {
                 }
             },
             confirmButton = {
-                Text("close", color = Color.White, modifier = Modifier.clickable { selectedAppForMenu = null }.padding(16.dp))
+                Text("close", color = launcherOnBackground(), modifier = Modifier.clickable { selectedAppForMenu = null }.padding(16.dp))
             }
         )
     }
 
     selectedAppForRename?.let { app ->
+        val onBackground = launcherOnBackground()
         AlertDialog(
             onDismissRequest = { selectedAppForRename = null },
-            containerColor = Color.Black,
-            title = { Text("rename app", color = Color.White) },
+            containerColor = launcherDialogContainer(),
+            title = { Text("rename app", color = onBackground) },
             text = {
                 BasicTextField(
                     value = renameInputText,
                     onValueChange = { renameInputText = it },
-                    textStyle = TextStyle(color = Color.White, fontSize = 18.sp),
+                    textStyle = TextStyle(color = onBackground, fontSize = 18.sp),
                     singleLine = true,
-                    cursorBrush = SolidColor(Color.White),
+                    cursorBrush = SolidColor(onBackground),
                     modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
                 )
             },
             confirmButton = {
-                Text("save", color = Color.White, modifier = Modifier.clickable {
+                Text("save", color = onBackground, modifier = Modifier.clickable {
                     if (renameInputText.trim().isNotEmpty()) viewModel.renameApp(app, renameInputText.trim())
                     selectedAppForRename = null
                 }.padding(16.dp))
             },
             dismissButton = {
-                Text("cancel", color = Color.LightGray, modifier = Modifier.clickable { selectedAppForRename = null }.padding(16.dp))
+                Text("cancel", color = launcherSecondary(), modifier = Modifier.clickable { selectedAppForRename = null }.padding(16.dp))
             }
         )
     }
 }
-

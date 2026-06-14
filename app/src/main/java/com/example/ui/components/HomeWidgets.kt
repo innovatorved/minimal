@@ -5,8 +5,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import com.example.ui.theme.MinimalFontFamily
+import com.example.ui.theme.launcherOnBackground
+import com.example.ui.theme.launcherSecondary
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -19,7 +20,7 @@ import com.example.util.rememberNextCalendarEvent
 fun DefaultHomeClock(currentTime: String, currentDate: String) {
     Text(
         text = currentTime,
-        color = Color.White,
+        color = launcherOnBackground(),
         fontSize = 46.sp,
         fontWeight = FontWeight.Bold,
         fontFamily = MinimalFontFamily,
@@ -27,7 +28,7 @@ fun DefaultHomeClock(currentTime: String, currentDate: String) {
     )
     Text(
         text = currentDate,
-        color = Color.LightGray,
+        color = launcherSecondary(),
         fontSize = 14.sp,
         fontFamily = MinimalFontFamily,
         textAlign = TextAlign.Center,
@@ -48,7 +49,7 @@ fun HomeWidget(
     when (widgetId) {
         "clock" -> Text(
             text = currentTime,
-            color = Color.White,
+            color = launcherOnBackground(),
             fontSize = 46.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = MinimalFontFamily,
@@ -57,7 +58,7 @@ fun HomeWidget(
         )
         "date" -> Text(
             text = currentDate,
-            color = Color.LightGray,
+            color = launcherSecondary(),
             fontSize = 14.sp,
             fontFamily = MinimalFontFamily,
             textAlign = TextAlign.Center,
@@ -67,7 +68,7 @@ fun HomeWidget(
             if (homeDisplayName.isNotBlank()) {
                 Text(
                     text = homeDisplayName,
-                    color = Color.LightGray,
+                    color = launcherSecondary(),
                     fontSize = 13.sp,
                     fontFamily = MinimalFontFamily,
                     textAlign = TextAlign.Center,
@@ -81,7 +82,7 @@ fun HomeWidget(
         }
         "battery" -> Text(
             text = rememberBatteryLevel().lowercase(),
-            color = Color.LightGray,
+            color = launcherSecondary(),
             fontSize = 14.sp,
             fontFamily = MinimalFontFamily,
             modifier = Modifier.padding(vertical = 8.dp)
@@ -99,7 +100,7 @@ fun HomeWidget(
             if (eventText.isNotBlank()) {
                 Text(
                     text = eventText.lowercase(),
-                    color = Color.LightGray,
+                    color = launcherSecondary(),
                     fontSize = 14.sp,
                     fontFamily = MinimalFontFamily,
                     textAlign = TextAlign.Center,

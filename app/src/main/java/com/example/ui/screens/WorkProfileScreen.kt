@@ -11,7 +11,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -23,6 +22,11 @@ import androidx.fragment.app.FragmentActivity
 import com.example.ui.LauncherViewModel
 import com.example.ui.components.LauncherBackBar
 import com.example.work.WorkProfileAuth
+import com.example.ui.theme.launcherBackground
+import com.example.ui.theme.launcherDialogContainer
+import com.example.ui.theme.launcherMuted
+import com.example.ui.theme.launcherOnBackground
+import com.example.ui.theme.launcherSecondary
 
 @Composable
 fun WorkProfileScreen(viewModel: LauncherViewModel) {
@@ -40,12 +44,12 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(launcherBackground())
             .padding(horizontal = 24.dp, vertical = 24.dp)
     ) {
         Text(
             text = "work profile",
-            color = Color.LightGray,
+            color = launcherSecondary(),
             fontSize = 11.sp,
             letterSpacing = 2.sp,
             modifier = Modifier.padding(bottom = 12.dp)
@@ -54,7 +58,7 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
         if (!hasWorkProfile) {
             Text(
                 text = "no work profile found on this device",
-                color = Color.Gray,
+                color = launcherSecondary(),
                 fontSize = 16.sp,
                 modifier = Modifier.padding(vertical = 24.dp)
             )
@@ -62,19 +66,19 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
             if (isPaused) {
                 Text(
                     text = "work profile is paused",
-                    color = Color.White,
+                    color = launcherOnBackground(),
                     fontSize = 20.sp,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
                 Text(
                     text = "work apps are hidden until you resume",
-                    color = Color.LightGray,
+                    color = launcherSecondary(),
                     fontSize = 14.sp,
                     modifier = Modifier.padding(bottom = 24.dp)
                 )
                 Text(
                     text = "resume work profile",
-                    color = Color.White,
+                    color = launcherOnBackground(),
                     fontSize = 16.sp,
                     modifier = Modifier
                         .clickable { viewModel.resumeWorkProfile(context) }
@@ -90,21 +94,21 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
                 ) {
                     Text(
                         text = "work apps are locked",
-                        color = Color.White,
+                        color = launcherOnBackground(),
                         fontSize = 22.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
                     Text(
                         text = "tap below to unlock with fingerprint or password",
-                        color = Color.LightGray,
+                        color = launcherSecondary(),
                         fontSize = 14.sp,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(bottom = 32.dp)
                     )
                     Text(
                         text = "unlock work profile",
-                        color = Color.White,
+                        color = launcherOnBackground(),
                         fontSize = 18.sp,
                         fontFamily = MinimalFontFamily,
                         modifier = Modifier
@@ -133,10 +137,10 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text("unlocked", color = Color.LightGray, fontSize = 14.sp)
+                    Text("unlocked", color = launcherSecondary(), fontSize = 14.sp)
                     Text(
                         text = "lock",
-                        color = Color.White,
+                        color = launcherOnBackground(),
                         fontSize = 14.sp,
                         modifier = Modifier.clickable { viewModel.lockWorkProfile() }
                     )
@@ -144,7 +148,7 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
 
                 Text(
                     text = "pause work profile",
-                    color = Color.White,
+                    color = launcherOnBackground(),
                     fontSize = 16.sp,
                     modifier = Modifier
                         .clickable { viewModel.pauseWorkProfile(context) }
@@ -152,7 +156,7 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
                 )
                 Text(
                     text = "pauses all work apps (pixel work profile pause)",
-                    color = Color.DarkGray,
+                    color = launcherMuted(),
                     fontSize = 11.sp,
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
@@ -160,15 +164,15 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
                 BasicTextField(
                     value = workSearch,
                     onValueChange = { viewModel.updateWorkSearchQuery(it) },
-                    textStyle = TextStyle(color = Color.White, fontSize = 18.sp, fontFamily = MinimalFontFamily),
+                    textStyle = TextStyle(color = launcherOnBackground(), fontSize = 18.sp, fontFamily = MinimalFontFamily),
                     singleLine = true,
-                    cursorBrush = SolidColor(Color.White),
+                    cursorBrush = SolidColor(launcherOnBackground()),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
                     decorationBox = { inner ->
                         if (workSearch.isEmpty()) {
-                            Text("search work apps", color = Color.DarkGray, fontSize = 18.sp)
+                            Text("search work apps", color = launcherMuted(), fontSize = 18.sp)
                         }
                         inner()
                     }
@@ -178,7 +182,7 @@ fun WorkProfileScreen(viewModel: LauncherViewModel) {
                     items(filteredApps) { app ->
                         Text(
                             text = app.appName.lowercase(),
-                            color = Color.White,
+                            color = launcherOnBackground(),
                             fontSize = 18.sp,
                             fontFamily = MinimalFontFamily,
                             modifier = Modifier

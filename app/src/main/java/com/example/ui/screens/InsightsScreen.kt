@@ -9,7 +9,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -19,6 +18,11 @@ import com.example.ui.LauncherViewModel
 import com.example.ui.components.LauncherBackBar
 import com.example.util.formatHourLabel
 import com.example.util.formatMinutesAsHours
+import com.example.ui.theme.launcherBackground
+import com.example.ui.theme.launcherDialogContainer
+import com.example.ui.theme.launcherMuted
+import com.example.ui.theme.launcherOnBackground
+import com.example.ui.theme.launcherSecondary
 
 @Composable
 fun InsightsScreen(viewModel: LauncherViewModel) {
@@ -34,35 +38,35 @@ fun InsightsScreen(viewModel: LauncherViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(launcherBackground())
             .padding(horizontal = 24.dp, vertical = 24.dp)
     ) {
         Text(
             "insights",
-            color = Color.LightGray,
+            color = launcherSecondary(),
             fontSize = 11.sp,
             letterSpacing = 2.sp,
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Text(
             "local only · nothing leaves your device",
-            color = Color.DarkGray,
+            color = launcherMuted(),
             fontSize = 11.sp,
             modifier = Modifier.padding(bottom = 16.dp)
         )
 
         if (insights == null) {
-            Text("loading…", color = Color.Gray, fontSize = 14.sp)
+            Text("loading…", color = launcherSecondary(), fontSize = 14.sp)
         } else if (!insights!!.hasUsageAccess) {
             Text(
                 "usage access required for screen time patterns",
-                color = Color.LightGray,
+                color = launcherSecondary(),
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
             Text(
                 "grant usage access",
-                color = Color.White,
+                color = launcherOnBackground(),
                 fontSize = 16.sp,
                 modifier = Modifier.clickable { viewModel.openUsageAccessSettings(context) }.padding(vertical = 14.dp)
             )
@@ -116,7 +120,7 @@ fun InsightsScreen(viewModel: LauncherViewModel) {
                         val goalMark = if (day.underDailyGoal) " · under goal" else ""
                         Text(
                             "$label  ${formatMinutesAsHours(day.totalScreenMinutes)}$goalMark",
-                            color = Color.White,
+                            color = launcherOnBackground(),
                             fontSize = 14.sp,
                             modifier = Modifier.padding(vertical = 6.dp)
                         )
@@ -135,7 +139,7 @@ fun InsightsScreen(viewModel: LauncherViewModel) {
                 item {
                     Text(
                         "refresh",
-                        color = Color.White,
+                        color = launcherOnBackground(),
                         fontSize = 16.sp,
                         modifier = Modifier
                             .clickable { viewModel.refreshInsights() }
@@ -143,7 +147,7 @@ fun InsightsScreen(viewModel: LauncherViewModel) {
                     )
                     Text(
                         "delete all history",
-                        color = Color.LightGray,
+                        color = launcherSecondary(),
                         fontSize = 16.sp,
                         modifier = Modifier
                             .clickable { showDeleteConfirm = true }
@@ -159,19 +163,19 @@ fun InsightsScreen(viewModel: LauncherViewModel) {
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            containerColor = Color.Black,
-            title = { Text("delete all insights history?", color = Color.White) },
+            containerColor = launcherBackground(),
+            title = { Text("delete all insights history?", color = launcherOnBackground()) },
             text = {
                 Text(
                     "removes usage, focus, and launcher event history from this device. app settings stay.",
-                    color = Color.LightGray,
+                    color = launcherSecondary(),
                     fontSize = 14.sp
                 )
             },
             confirmButton = {
                 Text(
                     "delete",
-                    color = Color.White,
+                    color = launcherOnBackground(),
                     modifier = Modifier.clickable {
                         viewModel.deleteAnalyticsHistory(context)
                         showDeleteConfirm = false
@@ -181,7 +185,7 @@ fun InsightsScreen(viewModel: LauncherViewModel) {
             dismissButton = {
                 Text(
                     "cancel",
-                    color = Color.LightGray,
+                    color = launcherSecondary(),
                     modifier = Modifier.clickable { showDeleteConfirm = false }.padding(16.dp)
                 )
             }
@@ -200,7 +204,7 @@ fun InsightsPreviewCard(
         if (!hasUsageAccess) {
             Text(
                 "grant usage access to see patterns",
-                color = Color.DarkGray,
+                color = launcherMuted(),
                 fontSize = 11.sp,
                 modifier = Modifier
                     .clickable(onClick = onGrantUsageAccess)
@@ -210,14 +214,14 @@ fun InsightsPreviewCard(
             val top = insights.topAppsToday.firstOrNull()
             Text(
                 "today: ${formatMinutesAsHours(insights.todayScreenMinutes)} · ${insights.goalPercent}% of goal",
-                color = Color.White,
+                color = launcherOnBackground(),
                 fontSize = 14.sp,
                 modifier = Modifier.padding(bottom = 4.dp)
             )
             if (top != null) {
                 Text(
                     "top: ${top.appName.lowercase()} ${formatMinutesAsHours(top.durationMinutes)}",
-                    color = Color.DarkGray,
+                    color = launcherMuted(),
                     fontSize = 11.sp,
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
@@ -225,7 +229,7 @@ fun InsightsPreviewCard(
         }
         Text(
             "view full insights →",
-            color = Color.LightGray,
+            color = launcherSecondary(),
             fontSize = 16.sp,
             modifier = Modifier.clickable(onClick = onOpenInsights).padding(vertical = 14.dp)
         )
@@ -236,7 +240,7 @@ fun InsightsPreviewCard(
 private fun InsightsSectionTitle(title: String) {
     Text(
         title,
-        color = Color.Gray,
+        color = launcherSecondary(),
         fontSize = 12.sp,
         modifier = Modifier.padding(top = 12.dp, bottom = 8.dp)
     )
@@ -250,8 +254,8 @@ private fun InsightRow(label: String, value: String) {
             .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(label, color = Color.LightGray, fontSize = 14.sp)
-        Text(value, color = Color.White, fontSize = 14.sp)
+        Text(label, color = launcherSecondary(), fontSize = 14.sp)
+        Text(value, color = launcherOnBackground(), fontSize = 14.sp)
     }
 }
 
@@ -263,10 +267,10 @@ private fun AppUsageRow(appName: String, minutes: Int, opens: Int) {
             .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(appName.lowercase(), color = Color.White, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Text(appName.lowercase(), color = launcherOnBackground(), fontSize = 14.sp, modifier = Modifier.weight(1f))
         Text(
             "${formatMinutesAsHours(minutes)} · $opens opens",
-            color = Color.LightGray,
+            color = launcherSecondary(),
             fontSize = 12.sp
         )
     }

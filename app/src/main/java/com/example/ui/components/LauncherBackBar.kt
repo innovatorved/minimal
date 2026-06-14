@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import com.example.ui.theme.launcherSecondary
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -17,7 +17,7 @@ fun LauncherBackBar(
 ) {
     Text(
         text = label,
-        color = Color.LightGray,
+        color = launcherSecondary(),
         fontSize = 14.sp,
         modifier = modifier
             .clickable(onClick = onBack)

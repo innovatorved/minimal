@@ -9,6 +9,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.core.content.ContextCompat
 import com.example.BuildConfig
+import com.example.ui.theme.LauncherThemes
 
 sealed class AppearanceResult {
     data object Success : AppearanceResult()
@@ -36,18 +37,52 @@ class SystemAppearanceController(private val context: Context) {
     fun isDarkModeEnabled(): Boolean =
         prefs.getBoolean(KEY_DARK_MODE, false)
 
+    fun isThemeWallpaperSyncEnabled(): Boolean =
+        prefs.getBoolean(KEY_THEME_WALLPAPER_SYNC, false)
+
+    fun setThemeWallpaperSync(enabled: Boolean, backgroundColorArgb: Int): AppearanceResult {
+        prefs.edit().putBoolean(KEY_THEME_WALLPAPER_SYNC, enabled).apply()
+        return if (enabled) applyThemeWallpapers(backgroundColorArgb) else AppearanceResult.Success
+    }
+
+    fun applyThemeWallpapers(backgroundColorArgb: Int): AppearanceResult {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            return AppearanceResult.Error("Wallpaper requires Android 7.0+")
+        }
+        return try {
+            val wm = WallpaperManager.getInstance(context)
+            val metrics = context.resources.displayMetrics
+            val width = metrics.widthPixels.coerceAtLeast(1)
+            val height = metrics.heightPixels.coerceAtLeast(1)
+            val bitmap = createSolidWallpaper(width, height, backgroundColorArgb)
+            wm.setBitmap(bitmap, null, true, WallpaperManager.FLAG_LOCK)
+            wm.setBitmap(bitmap, null, true, WallpaperManager.FLAG_SYSTEM)
+            AppearanceResult.Success
+        } catch (e: SecurityException) {
+            AppearanceResult.Error("Wallpaper permission denied — open settings > wallpaper and allow this app")
+        } catch (e: Exception) {
+            AppearanceResult.Error(e.message ?: "Failed to set wallpaper")
+        }
+    }
+
     fun setWallpaperMatching(enabled: Boolean): AppearanceResult {
         prefs.edit().putBoolean(KEY_WALLPAPER_MATCHING, enabled).apply()
-        return if (enabled) ensureBlackWallpapers() else AppearanceResult.Success
+        return if (enabled && !isThemeWallpaperSyncEnabled()) ensureBlackWallpapers() else AppearanceResult.Success
     }
 
     /** Applies plain black home wallpaper + minimalist clock lock wallpaper matching the launcher. */
     fun ensureBlackWallpapers(): AppearanceResult {
+        if (isThemeWallpaperSyncEnabled()) {
+            return AppearanceResult.Success
+        }
         prefs.edit().putBoolean(KEY_WALLPAPER_MATCHING, true).apply()
         return applyMatchingWallpapers()
     }
 
     fun applyMatchingWallpapers(): AppearanceResult {
+        if (isThemeWallpaperSyncEnabled()) {
+            return AppearanceResult.Success
+        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             return AppearanceResult.Error("Wallpaper requires Android 7.0+")
         }
@@ -213,7 +248,14 @@ class SystemAppearanceController(private val context: Context) {
     }
 
     fun reapplySavedSettings() {
-        if (isWallpaperMatchingEnabled()) ensureBlackWallpapers()
+        if (isThemeWallpaperSyncEnabled()) {
+            val launcherPrefs = context.getSharedPreferences(LAUNCHER_PREFS_NAME, Context.MODE_PRIVATE)
+            val themeId = launcherPrefs.getString(KEY_THEME_COLOR_ID, LauncherThemes.defaultId)
+                ?: LauncherThemes.defaultId
+            applyThemeWallpapers(LauncherThemes.backgroundArgbForThemeId(themeId))
+        } else if (isWallpaperMatchingEnabled()) {
+            ensureBlackWallpapers()
+        }
         if (hasWriteSecureSettings() && isSystemDarkSchemaEnabled()) {
             setGrayscale(true)
             setDarkMode(true)
@@ -228,14 +270,20 @@ class SystemAppearanceController(private val context: Context) {
         context.startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
 
-    private fun createBlackWallpaper(width: Int, height: Int): Bitmap {
+    private fun createBlackWallpaper(width: Int, height: Int): Bitmap =
+        createSolidWallpaper(width, height, AndroidColor.BLACK)
+
+    private fun createSolidWallpaper(width: Int, height: Int, colorInt: Int): Bitmap {
         return Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565).apply {
-            eraseColor(AndroidColor.BLACK)
+            eraseColor(colorInt)
         }
     }
 
     companion object {
         private const val PREFS_NAME = "system_appearance"
+        private const val LAUNCHER_PREFS_NAME = "launcher_settings"
+        private const val KEY_THEME_COLOR_ID = "theme_color_id"
+        private const val KEY_THEME_WALLPAPER_SYNC = "theme_wallpaper_sync"
         private const val KEY_WALLPAPER_MATCHING = "wallpaper_matching"
         private const val KEY_GRAYSCALE = "grayscale"
         private const val KEY_DARK_MODE = "dark_mode"

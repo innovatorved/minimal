@@ -10,12 +10,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.LauncherViewModel
 import com.example.ui.components.LauncherBackBar
+import com.example.ui.theme.launcherBackground
+import com.example.ui.theme.launcherDialogContainer
+import com.example.ui.theme.launcherMuted
+import com.example.ui.theme.launcherOnBackground
+import com.example.ui.theme.launcherSecondary
 
 private val widgetDescriptions = mapOf(
     "clock" to "centered time display",
@@ -32,19 +36,19 @@ fun WidgetsScreen(viewModel: LauncherViewModel) {
     val inactiveWidgets = widgetDescriptions.keys.filter { it !in activeWidgets }
 
     Column(
-        modifier = Modifier.fillMaxSize().background(Color.Black).padding(horizontal = 24.dp, vertical = 24.dp)
+        modifier = Modifier.fillMaxSize().background(launcherBackground()).padding(horizontal = 24.dp, vertical = 24.dp)
     ) {
-        Text("widgets", color = Color.LightGray, fontSize = 11.sp, letterSpacing = 2.sp)
+        Text("widgets", color = launcherSecondary(), fontSize = 11.sp, letterSpacing = 2.sp)
         Text(
             "manage widgets on home screen",
-            color = Color.White,
+            color = launcherOnBackground(),
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(vertical = 16.dp)
         )
         Text(
             "on by default — remove or reorder below",
-            color = Color.DarkGray,
+            color = launcherMuted(),
             fontSize = 12.sp,
             modifier = Modifier.padding(bottom = 8.dp)
         )
@@ -52,7 +56,7 @@ fun WidgetsScreen(viewModel: LauncherViewModel) {
         LazyColumn(modifier = Modifier.weight(1f)) {
             if (activeWidgets.isNotEmpty()) {
                 item {
-                    Text("on home screen", color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
+                    Text("on home screen", color = launcherSecondary(), fontSize = 12.sp, modifier = Modifier.padding(bottom = 8.dp))
                 }
                 items(activeWidgets, key = { it }) { widgetId ->
                     ActiveWidgetRow(
@@ -69,7 +73,7 @@ fun WidgetsScreen(viewModel: LauncherViewModel) {
                 item {
                     Text(
                         "no widgets on home — add one below",
-                        color = Color.DarkGray,
+                        color = launcherMuted(),
                         fontSize = 14.sp,
                         modifier = Modifier.padding(vertical = 12.dp)
                     )
@@ -80,7 +84,7 @@ fun WidgetsScreen(viewModel: LauncherViewModel) {
                 item {
                     Text(
                         "add widget",
-                        color = Color.Gray,
+                        color = launcherSecondary(),
                         fontSize = 12.sp,
                         modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                     )
@@ -110,20 +114,20 @@ private fun ActiveWidgetRow(
 ) {
     Column(modifier = Modifier.padding(vertical = 12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(widgetId, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Text("[remove]", color = Color.LightGray, modifier = Modifier.clickable(onClick = onRemove))
+            Text(widgetId, color = launcherOnBackground(), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("[remove]", color = launcherSecondary(), modifier = Modifier.clickable(onClick = onRemove))
         }
-        Text(description, color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
+        Text(description, color = launcherSecondary(), fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 8.dp)) {
             Text(
                 text = "move up",
-                color = if (canMoveUp) Color.White else Color.DarkGray,
+                color = if (canMoveUp) launcherOnBackground() else launcherMuted(),
                 fontSize = 12.sp,
                 modifier = Modifier.clickable(enabled = canMoveUp, onClick = onMoveUp)
             )
             Text(
                 text = "move down",
-                color = if (canMoveDown) Color.White else Color.DarkGray,
+                color = if (canMoveDown) launcherOnBackground() else launcherMuted(),
                 fontSize = 12.sp,
                 modifier = Modifier.clickable(enabled = canMoveDown, onClick = onMoveDown)
             )
@@ -139,9 +143,9 @@ private fun InactiveWidgetRow(
 ) {
     Column(modifier = Modifier.padding(vertical = 12.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(widgetId, color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Text("[add]", color = Color.White, modifier = Modifier.clickable(onClick = onAdd))
+            Text(widgetId, color = launcherOnBackground(), fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("[add]", color = launcherOnBackground(), modifier = Modifier.clickable(onClick = onAdd))
         }
-        Text(description, color = Color.Gray, fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
+        Text(description, color = launcherSecondary(), fontSize = 12.sp, modifier = Modifier.padding(top = 4.dp))
     }
 }

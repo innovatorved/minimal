@@ -20,6 +20,7 @@ import com.example.system.SystemAppearanceController
 import com.example.ui.navigation.AppScreen
 import com.example.ui.navigation.LauncherNavigator
 import com.example.ui.navigation.NavigationDirection
+import com.example.ui.theme.LauncherThemes
 import com.example.usage.UsageStatsRepository
 import com.example.util.AppLabelResolver
 import com.example.util.LauncherUtils
@@ -42,7 +43,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         private const val PREF_HOME_DISPLAY_NAME = "home_display_name"
         private const val PREF_ACTIVE_WIDGETS = "active_widgets"
         private const val PREF_WIDGETS_SEEDED = "widgets_seeded_v1"
+        private const val PREF_THEME_COLOR_ID = "theme_color_id"
+        private const val PREF_PAYMENT_PKG = "payment_pkg"
+        private const val PREF_PAYMENT_NAME = "payment_name"
+        const val GOOGLE_APP_PACKAGE = "com.google.android.googlequicksearchbox"
         val DEFAULT_ACTIVE_WIDGETS = listOf("clock", "date", "display name")
+
+        val PAYMENT_APP_KEYWORDS = listOf("pay", "gpay", "phonepe", "paytm", "bhim", "upi", "wallet")
     }
 
     private val db = LauncherDatabase.getDatabase(application)
@@ -115,6 +122,9 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     private val _isWallpaperMatchingEnabled = MutableStateFlow(appearanceController.isWallpaperMatchingEnabled())
     val isWallpaperMatchingEnabled: StateFlow<Boolean> = _isWallpaperMatchingEnabled.asStateFlow()
 
+    private val _isThemeWallpaperSyncEnabled = MutableStateFlow(appearanceController.isThemeWallpaperSyncEnabled())
+    val isThemeWallpaperSyncEnabled: StateFlow<Boolean> = _isThemeWallpaperSyncEnabled.asStateFlow()
+
     private val _isSystemDarkSchemaEnabled = MutableStateFlow(appearanceController.isSystemDarkSchemaEnabled())
     val isSystemDarkSchemaEnabled: StateFlow<Boolean> = _isSystemDarkSchemaEnabled.asStateFlow()
 
@@ -146,6 +156,18 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
 
     private val _shortcutAppName = MutableStateFlow(prefs.getString("shortcut_name", null))
     val shortcutAppName: StateFlow<String?> = _shortcutAppName.asStateFlow()
+
+    private val _themeColorId = MutableStateFlow(
+        prefs.getString(PREF_THEME_COLOR_ID, LauncherThemes.defaultId)
+            ?: LauncherThemes.defaultId
+    )
+    val themeColorId: StateFlow<String> = _themeColorId.asStateFlow()
+
+    private val _paymentPackageName = MutableStateFlow(prefs.getString(PREF_PAYMENT_PKG, null))
+    val paymentPackageName: StateFlow<String?> = _paymentPackageName.asStateFlow()
+
+    private val _paymentAppName = MutableStateFlow(prefs.getString(PREF_PAYMENT_NAME, null))
+    val paymentAppName: StateFlow<String?> = _paymentAppName.asStateFlow()
 
     private val _activeWidgets = MutableStateFlow(loadActiveWidgets())
     val activeWidgets: StateFlow<List<String>> = _activeWidgets.asStateFlow()
@@ -227,8 +249,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
         startUsageSync()
         startPriorityNotificationRefresh()
-        appearanceController.ensureBlackWallpapers()
-        _isWallpaperMatchingEnabled.value = true
+        reapplyWallpaperPreference()
         refreshWorkProfileState()
         viewModelScope.launch { runAnalyticsBackfillIfNeeded() }
     }
@@ -272,8 +293,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun onResume() {
         _hasUsageAccess.value = usageStatsRepository.hasUsageAccess()
         _hasContactsAccess.value = hasContactsPermission()
-        appearanceController.ensureBlackWallpapers()
-        _isWallpaperMatchingEnabled.value = true
+        reapplyWallpaperPreference()
         refreshWorkProfileState()
         refreshPriorityNotifications()
         viewModelScope.launch {
@@ -348,8 +368,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         ensureDefaultWidgets()
         ensureDefaultHomeDisplayName()
         prefs.edit().putBoolean("onboarding_complete", true).apply()
-        appearanceController.ensureBlackWallpapers()
-        _isWallpaperMatchingEnabled.value = true
+        reapplyWallpaperPreference()
+        if (!_isThemeWallpaperSyncEnabled.value) {
+            _isWallpaperMatchingEnabled.value = true
+        }
         if (!LauncherUtils.isDefaultLauncher(context)) {
             LauncherUtils.requestDefaultLauncher(context)
         }
@@ -452,7 +474,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         _is24HourFormat.value = newValue
         prefs.edit().putBoolean("is_24h", newValue).apply()
         if (_isWallpaperMatchingEnabled.value) {
-            appearanceController.ensureBlackWallpapers()
+            reapplyWallpaperPreference()
         }
     }
 
@@ -466,6 +488,14 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun setDailyGoalMinutes(minutes: Int) {
         _dailyGoalMinutes.value = minutes
         prefs.edit().putInt("daily_goal_minutes", minutes).apply()
+    }
+
+    fun toggleThemeWallpaperSync(context: Context) {
+        val newValue = !_isThemeWallpaperSyncEnabled.value
+        val argb = LauncherThemes.backgroundArgbForThemeId(_themeColorId.value)
+        val result = appearanceController.setThemeWallpaperSync(newValue, argb)
+        _isThemeWallpaperSyncEnabled.value = newValue
+        handleAppearanceResult(context, result)
     }
 
     fun toggleWallpaperMatching(context: Context) {
@@ -558,6 +588,87 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         prefs.edit().remove("shortcut_pkg").remove("shortcut_name").apply()
     }
 
+    fun setThemeColorId(themeId: String) {
+        _themeColorId.value = themeId
+        prefs.edit().putString(PREF_THEME_COLOR_ID, themeId).apply()
+        applyThemeWallpaperIfEnabled(getApplication())
+    }
+
+    private fun applyThemeWallpaperIfEnabled(context: Context) {
+        if (!_isThemeWallpaperSyncEnabled.value) return
+        val argb = LauncherThemes.backgroundArgbForThemeId(_themeColorId.value)
+        appearanceController.applyThemeWallpapers(argb)
+    }
+
+    private fun reapplyWallpaperPreference() {
+        if (_isThemeWallpaperSyncEnabled.value) {
+            applyThemeWallpaperIfEnabled(getApplication())
+        } else {
+            appearanceController.ensureBlackWallpapers()
+            _isWallpaperMatchingEnabled.value = true
+        }
+    }
+
+    fun assignPaymentApp(appName: String, packageName: String) {
+        _paymentPackageName.value = packageName
+        _paymentAppName.value = appName
+        prefs.edit()
+            .putString(PREF_PAYMENT_PKG, packageName)
+            .putString(PREF_PAYMENT_NAME, appName)
+            .apply()
+    }
+
+    fun clearPaymentApp() {
+        _paymentPackageName.value = null
+        _paymentAppName.value = null
+        prefs.edit().remove(PREF_PAYMENT_PKG).remove(PREF_PAYMENT_NAME).apply()
+    }
+
+    fun paymentAppCandidates(): List<AppConfigEntity> {
+        val apps = allAppConfigs.value.filter { !it.isHidden }
+        val keywordMatches = apps.filter { app ->
+            val name = app.appName.lowercase()
+            PAYMENT_APP_KEYWORDS.any { keyword -> name.contains(keyword) }
+        }
+        return if (keywordMatches.isNotEmpty()) keywordMatches.sortedBy { it.appName.lowercase() } else apps.sortedBy { it.appName.lowercase() }
+    }
+
+    fun launchGoogle(context: Context) {
+        val pm = context.packageManager
+        val googleIntent = pm.getLaunchIntentForPackage(GOOGLE_APP_PACKAGE)
+        if (googleIntent != null) {
+            launchAppDirect(context, GOOGLE_APP_PACKAGE, "Google")
+        } else {
+            viewModelScope.launch {
+                try {
+                    val searchIntent = Intent(Intent.ACTION_WEB_SEARCH).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    context.startActivity(searchIntent)
+                } catch (_: Exception) {
+                    Toast.makeText(context, "could not open google", Toast.LENGTH_SHORT).show()
+                }
+                goHome()
+            }
+        }
+    }
+
+    fun launchPaymentApp(context: Context, onNeedPicker: () -> Unit) {
+        val pkg = _paymentPackageName.value
+        if (pkg === null) {
+            onNeedPicker()
+            return
+        }
+        val pm = context.packageManager
+        if (pm.getLaunchIntentForPackage(pkg) === null) {
+            Toast.makeText(context, "payment app not installed — pick another", Toast.LENGTH_SHORT).show()
+            onNeedPicker()
+            return
+        }
+        val name = _paymentAppName.value ?: pkg
+        launchAppDirect(context, pkg, name)
+    }
+
     fun launchShortcut(context: Context) {
         val pkg = _shortcutPackageName.value ?: return navigateTo(AppScreen.ShortcutPicker)
         val name = _shortcutAppName.value ?: pkg
@@ -636,6 +747,24 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun archiveApp(app: AppConfigEntity) {
+        viewModelScope.launch {
+            repository.updateAppConfig(
+                app.copy(
+                    isHidden = true,
+                    isFavorite = false,
+                    pinnedOrder = 0
+                )
+            )
+        }
+    }
+
+    fun unarchiveApp(app: AppConfigEntity) {
+        viewModelScope.launch {
+            repository.updateAppConfig(app.copy(isHidden = false))
+        }
+    }
+
     fun updateDailyLimit(app: AppConfigEntity, limitMinutes: Int) {
         viewModelScope.launch {
             repository.updateAppConfig(app.copy(dailyLimitMinutes = limitMinutes))
@@ -649,6 +778,10 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     fun tryLaunchApp(context: Context, packageName: String, appName: String) {
         viewModelScope.launch {
             val config = allAppConfigs.value.firstOrNull { it.packageName == packageName }
+            if (config?.isHidden == true) {
+                Toast.makeText(context, "app is archived — unarchive from drawer", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
             val isScheduledBlocked = config?.isBlocked == true &&
                 _isScheduledBlockingEnabled.value &&
                 checkIfInsideSchedule()
@@ -712,6 +845,13 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun applyLockWallpaperNow(context: Context) {
+        if (_isThemeWallpaperSyncEnabled.value) {
+            val result = appearanceController.applyThemeWallpapers(
+                LauncherThemes.backgroundArgbForThemeId(_themeColorId.value)
+            )
+            handleAppearanceResult(context, result)
+            return
+        }
         val result = appearanceController.ensureBlackWallpapers()
         _isWallpaperMatchingEnabled.value = true
         if (result is AppearanceResult.Success) {
@@ -820,6 +960,7 @@ class LauncherViewModel(application: Application) : AndroidViewModel(application
                 isBlocked = existing?.isBlocked ?: false,
                 dailyLimitMinutes = existing?.dailyLimitMinutes ?: 0,
                 isSystemApp = (info.activityInfo.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM) != 0,
+                isHidden = existing?.isHidden ?: false,
                 pinnedOrder = existing?.pinnedOrder ?: 0
             )
         }.distinctBy { it.packageName }

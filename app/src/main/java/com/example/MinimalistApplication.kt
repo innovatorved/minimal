@@ -8,6 +8,6 @@ class MinimalistApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-        SystemAppearanceController(this).ensureBlackWallpapers()
+        SystemAppearanceController(this).reapplySavedSettings()
     }
 }
